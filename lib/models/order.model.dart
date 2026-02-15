@@ -17,6 +17,19 @@ OrderStatus getOrderStatus(String status) {
   }
 }
 
+String getOrderStatusRevered(OrderStatus status) {
+  switch (status) {
+    case OrderStatus.pending:
+      return 'Pending';
+    case OrderStatus.ongoing:
+      return 'Ongoing';
+    case OrderStatus.readyForPickUp:
+      return 'Ready for Pickup';
+    case OrderStatus.pickedUp:
+      return 'Picked up';
+  }
+}
+
 PaymentStatus getPaymentStatus(String status) {
   switch (status) {
     case 'Paid':

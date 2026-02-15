@@ -23,37 +23,46 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+    try {
+      if (_formKey.currentState!.validate()) {
+        setState(() {
+          _isLoading = true;
+        });
 
-      final _userInfo = await Supabase.instance.client
-          .from('view_app_users')
-          .select('email, role_name, branches')
-          .eq('username', _usernameController.text)
-          .maybeSingle();
+        final _userInfo = await Supabase.instance.client
+            .from('view_app_users')
+            .select('email, role_name, branches')
+            .eq('username', _usernameController.text)
+            .maybeSingle();
 
-      if (_userInfo == null) {
-        return;
+        if (_userInfo == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('User not found!')));
+          }
+          return;
+        }
+
+        await Supabase.instance.client.auth.signInWithPassword(
+          email: _userInfo['email'],
+          password: _passwordController.text,
+        );
+
+        if (mounted) {
+          Navigator.of(context).pushNamed('/');
+        }
       }
-
-      await Supabase.instance.client.auth.signInWithPassword(
-        email: _userInfo['email'],
-        password: _passwordController.text,
-      );
-
-      await Navigator.of(context).pushNamed('/');
-
-      setState(() {
-        _isLoading = false;
-      });
-
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Login successful!')));
+        ).showSnackBar(SnackBar(content: Text('Error ${error.toString()}')));
       }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 

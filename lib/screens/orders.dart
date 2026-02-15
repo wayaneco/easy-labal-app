@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:intl/intl.dart';
 
 import 'package:easy_laba/components/drawer.dart';
 
@@ -15,9 +17,21 @@ class OrderScreen extends StatefulWidget {
 
 class _OrderScreenState extends State<OrderScreen> {
   OrderStatus? _selectedStatusFilter;
-  TextEditingController _searchQuery = TextEditingController();
-
+  final TextEditingController _searchQuery = TextEditingController();
   Future<List<OrderModel>>? orders;
+  DateTimeRange dateRangeFilter = DateTimeRange(
+    start: DateTime(DateTime.now().year, DateTime.now().month, 1),
+    end: DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+      23,
+      59,
+      59,
+    ),
+  );
+
+  Timer? _debounce;
 
   Color _getStatusColor(OrderStatus status) {
     switch (status) {
@@ -58,6 +72,10 @@ class _OrderScreenState extends State<OrderScreen> {
     }
   }
 
+  String _formatDateTime(String format, DateTime date) {
+    return DateFormat(format).format(date);
+  }
+
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
@@ -88,33 +106,37 @@ class _OrderScreenState extends State<OrderScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadiusGeometry.circular(5),
+        ),
         title: const Text('Filter Orders'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              title: const Text('All Orders'),
+              selected: _selectedStatusFilter == null,
+              title: const Text('All'),
               leading: Radio<OrderStatus?>(
                 value: null,
                 groupValue: _selectedStatusFilter,
                 onChanged: (value) {
                   setState(() => _selectedStatusFilter = value);
+                  fetchOrders();
                   Navigator.pop(context);
                 },
               ),
+              trailing: null,
             ),
             ...OrderStatus.values.map(
               (status) => ListTile(
+                selected: _selectedStatusFilter == status,
                 title: Text(_getStatusText(status)),
-                leading: Icon(
-                  _getStatusIcon(status),
-                  color: _getStatusColor(status),
-                ),
-                trailing: Radio<OrderStatus?>(
+                leading: Radio<OrderStatus?>(
                   value: status,
                   groupValue: _selectedStatusFilter,
                   onChanged: (value) {
                     setState(() => _selectedStatusFilter = value);
+                    fetchOrders();
                     Navigator.pop(context);
                   },
                 ),
@@ -139,7 +161,254 @@ class _OrderScreenState extends State<OrderScreen> {
   void initState() {
     super.initState();
 
-    orders = OrderService().fetchOrders();
+    orders = OrderService().fetchOrders(date: dateRangeFilter);
+  }
+
+  void fetchOrders() {
+    setState(() {
+      orders = OrderService().fetchOrders(
+        search: _searchQuery.text.isNotEmpty ? _searchQuery.text : null,
+        orderStatus: _selectedStatusFilter,
+        date: dateRangeFilter,
+      );
+    });
+  }
+
+  Future<DateTimeRange?> _selectDate(
+    BuildContext context,
+    DateTime initialStartDate,
+    DateTime initialEndDate,
+  ) async {
+    DateTime? startDate = initialStartDate;
+    DateTime? endDate = initialEndDate;
+
+    return await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(5)),
+              ),
+              backgroundColor: Colors.white,
+              child: Container(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Align(
+                      alignment: AlignmentGeometry.center,
+                      child: Text(
+                        'Select Date Range',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    Text(
+                      'Start Date',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        hoverColor: Colors.transparent,
+                        onTap: () async {
+                          final DateTime? result = await showDatePicker(
+                            initialEntryMode: DatePickerEntryMode.calendarOnly,
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime.now(),
+                          );
+
+                          if (result != null) {
+                            setState(() {
+                              startDate = result;
+                            });
+                          }
+                        },
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  width: 1,
+                                  color: Color(0xFF818181),
+                                ),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                              height: 48,
+                              padding: EdgeInsets.fromLTRB(42, 8, 8, 8),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  startDate == null
+                                      ? 'mm/dd/yyyy'
+                                      : DateFormat(
+                                          'MMMM dd, yyyy',
+                                        ).format(startDate!),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 0,
+                              bottom: 0,
+                              left: 8,
+                              child: Icon(
+                                Icons.calendar_month,
+                                color: Color(0xFF818181),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    Text(
+                      'End Date',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        hoverColor: Colors.transparent,
+                        onTap: () async {
+                          final DateTime? result = await showDatePicker(
+                            initialEntryMode: DatePickerEntryMode.calendarOnly,
+                            initialDate: startDate,
+                            context: context,
+                            firstDate: startDate!,
+                            lastDate: DateTime.now(),
+                          );
+
+                          if (result != null) {
+                            setState(() {
+                              endDate = DateTime(
+                                result.year,
+                                result.month,
+                                result.day,
+                                23,
+                                59,
+                                59,
+                              );
+                            });
+                          }
+                        },
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  width: 1,
+                                  color: Color(0xFF818181),
+                                ),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                              height: 48,
+                              padding: EdgeInsets.fromLTRB(42, 8, 8, 8),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  endDate == null
+                                      ? 'mm/dd/yyyy'
+                                      : DateFormat(
+                                          'MMMM dd, yyyy',
+                                        ).format(endDate!),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 0,
+                              bottom: 0,
+                              left: 8,
+                              child: Icon(
+                                Icons.calendar_month,
+                                color: Color(0xFF818181),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 32),
+                    Row(
+                      spacing: 18,
+                      children: [
+                        Flexible(
+                          flex: 1,
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 40,
+                            child: OutlinedButton(
+                              onPressed: () async {
+                                Navigator.pop(context);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(5),
+                                  ),
+                                ),
+                              ),
+                              child: Text('Cancel'),
+                            ),
+                          ),
+                        ),
+                        Flexible(
+                          flex: 1,
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 40,
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                Navigator.pop(
+                                  context,
+                                  DateTimeRange(
+                                    start: startDate!,
+                                    end: endDate!,
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFF3B82F6),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(5),
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                'Confirm',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -148,29 +417,26 @@ class _OrderScreenState extends State<OrderScreen> {
       backgroundColor: const Color(0xFFF8FAFC),
       drawer: CustomDrawer(),
       appBar: _buildAppBar(context),
-      // body: Column(
-      //   children: [
-      //     _buildSearchBar(),
-      //     _buildStatusChips(),
-      //     Expanded(
-      //       child: _filteredOrders.isEmpty
-      //           ? _buildEmptyState()
-      //           : _buildOrdersList(),
-      //     ),
-      //   ],
-      // ),
       body: Column(
         mainAxisSize: MainAxisSize.max,
         children: [
           _buildSearchBar(),
-          _buildStatusChips(),
+          _buildDateRangeInfo(),
           Expanded(
             child: FutureBuilder<List<OrderModel>>(
               initialData: [],
               future: orders,
               builder: (BuildContext context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
+                  return Center(
+                    child: SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        constraints: BoxConstraints(),
+                      ),
+                    ),
+                  );
                 }
 
                 if (snapshot.hasError) {
@@ -179,7 +445,7 @@ class _OrderScreenState extends State<OrderScreen> {
 
                 final data = snapshot.data!;
 
-                if (!snapshot.hasData || snapshot.data == null) {
+                if (data.isEmpty) {
                   return _buildEmptyState();
                 }
 
@@ -199,7 +465,11 @@ class _OrderScreenState extends State<OrderScreen> {
                       );
                     },
                   ),
-                  onRefresh: () async {},
+                  onRefresh: () async {
+                    setState(() {
+                      orders = OrderService().fetchOrders();
+                    });
+                  },
                 );
               },
             ),
@@ -239,13 +509,6 @@ class _OrderScreenState extends State<OrderScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          // Text(
-          //   '${_filteredOrders.length} orders',
-          //   style: TextStyle(
-          //     color: Colors.white.withOpacity(0.8),
-          //     fontSize: 12,
-          //   ),
-          // ),
         ],
       ),
       actions: [
@@ -254,28 +517,23 @@ class _OrderScreenState extends State<OrderScreen> {
           onPressed: _showFilterDialog,
           tooltip: 'Filter',
         ),
-        Stack(
-          children: [
-            IconButton(
-              icon: const Icon(
-                Icons.notifications_outlined,
-                color: Colors.white,
-              ),
-              onPressed: () {},
-            ),
-            Positioned(
-              right: 8,
-              top: 8,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          ],
+        IconButton(
+          onPressed: () async {
+            final result = await _selectDate(
+              context,
+              dateRangeFilter.start,
+              dateRangeFilter.end,
+            );
+
+            if (result != null) {
+              setState(() {
+                dateRangeFilter = result;
+              });
+
+              fetchOrders();
+            }
+          },
+          icon: Icon(Icons.calendar_month_outlined, color: Colors.white),
         ),
         const SizedBox(width: 8),
       ],
@@ -283,103 +541,85 @@ class _OrderScreenState extends State<OrderScreen> {
   }
 
   Widget _buildSearchBar() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: _searchQuery,
+                onChanged: (value) {
+                  if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+                  _debounce = Timer(const Duration(milliseconds: 1000), () {
+                    fetchOrders();
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search orders or customers...',
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: Color(0xFF94A3B8),
+                  ),
+                  suffixIcon: _searchQuery.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(
+                            Icons.clear,
+                            color: Color(0xFF94A3B8),
+                          ),
+                          onPressed: () {
+                            setState(() => _searchQuery.text = '');
+                            fetchOrders();
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDateRangeInfo() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: TextField(
-          controller: _searchQuery,
-          onChanged: (value) => setState(() => _searchQuery.text = value),
-          decoration: InputDecoration(
-            hintText: 'Search orders or customers...',
-            prefixIcon: const Icon(Icons.search, color: Color(0xFF94A3B8)),
-            suffixIcon: _searchQuery.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, color: Color(0xFF94A3B8)),
-                    onPressed: () => setState(() => _searchQuery.text = ''),
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+      margin: EdgeInsets.only(bottom: 10),
+      alignment: Alignment.centerLeft,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        spacing: 5,
+        children: [
+          Text('Showing'),
+          Text(
+            _formatDateTime('MMMM dd, yyyy', dateRangeFilter.start),
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusChips() {
-    return FutureBuilder<List<OrderModel>>(
-      future: orders,
-      builder: (context, snapshot) {
-        final data = snapshot.data!;
-
-        return SizedBox(
-          height: 50,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            children: [
-              _buildStatusChip(null, 'All', data.length),
-              ...OrderStatus.values.map((status) {
-                final count = data
-                    .where((o) => o.order_status == status)
-                    .length;
-                return _buildStatusChip(status, _getStatusText(status), count);
-              }),
-            ],
+          Text('to'),
+          Text(
+            _formatDateTime('MMMM dd, yyyy', dateRangeFilter.end),
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStatusChip(OrderStatus? status, String label, int count) {
-    final isSelected = _selectedStatusFilter == status;
-    Color color;
-    if (status == null) {
-      color = isSelected ? const Color(0xFF3B82F6) : const Color(0xFF64748B);
-    } else {
-      color = isSelected
-          ? _getStatusColor(status)
-          : const Color(0xFF64748B).withOpacity(0.6);
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        label: Text('$label ($count)'),
-        selected: isSelected,
-        onSelected: (_) => setState(() => _selectedStatusFilter = status),
-        selectedColor: color.withOpacity(0.2),
-        checkmarkColor: color,
-        labelStyle: TextStyle(
-          color: isSelected ? color : const Color(0xFF64748B),
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          fontSize: 13,
-        ),
-        backgroundColor: Colors.white,
-        side: BorderSide(
-          color: isSelected ? color : Colors.transparent,
-          width: 1.5,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        avatar: status != null
-            ? Icon(_getStatusIcon(status), size: 16, color: color)
-            : null,
+        ],
       ),
     );
   }
