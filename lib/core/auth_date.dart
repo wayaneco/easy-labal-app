@@ -1,5 +1,5 @@
 import 'package:easy_laba/screens/login.dart';
-import 'package:easy_laba/screens/orders.dart';
+import '../features/orders/view/order_page.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

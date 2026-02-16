@@ -41,6 +41,15 @@ PaymentStatus getPaymentStatus(String status) {
   }
 }
 
+String getPaymentStatusRevered(PaymentStatus status) {
+  switch (status) {
+    case PaymentStatus.paid:
+      return 'Paid';
+    case PaymentStatus.unpaid:
+      return 'Unpaid';
+  }
+}
+
 class OrderModel {
   final String order_id;
   final String customer_id;

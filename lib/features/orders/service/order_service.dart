@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/order.model.dart';
+import '../model/order_model.dart';
 
 class OrderService {
   final _client = Supabase.instance.client;
@@ -37,5 +37,22 @@ class OrderService {
     final response = await query.order('created_at', ascending: false);
 
     return (response as List).map((e) => OrderModel.fromJson(e)).toList();
+  }
+
+  Future<void> updatePaymentStatus(
+    String order_id,
+    PaymentStatus status,
+    String staff_id,
+  ) async {
+    try {
+      await _client.rpc(
+        'update_order_status',
+        params: {
+          'p_order_id': order_id,
+          'p_order_status': getPaymentStatusRevered(status),
+          'p_staff_id': staff_id,
+        },
+      );
+    } catch (err) {}
   }
 }
