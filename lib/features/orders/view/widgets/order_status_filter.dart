@@ -18,32 +18,17 @@ class OrderStatusFilter extends StatelessWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                selected: selectedStatus == null,
-                title: const Text('All'),
-                hoverColor: Colors.transparent,
-                onTap: () {
-                  Navigator.pop(context);
-                },
-                leading: Radio<OrderStatus?>(
-                  value: null,
-                  hoverColor: Colors.transparent,
-                  groupValue: selectedStatus,
-                  onChanged: (_) {
-                    Navigator.pop(context);
-                  },
-                ),
-                trailing: null,
-              ),
               ...OrderStatus.values.map(
                 (status) => ListTile(
-                  selected: selectedStatus == status,
+                  selected: status == OrderStatus.all
+                      ? selectedStatus == null
+                      : selectedStatus == status,
                   onTap: () {
                     Navigator.pop(context, status);
                   },
                   title: Text(getOrderStatusRevered(status)),
                   leading: Radio<OrderStatus?>(
-                    value: status,
+                    value: status == OrderStatus.all ? null : status,
                     groupValue: selectedStatus,
                     onChanged: (value) {
                       Navigator.pop(context, status);

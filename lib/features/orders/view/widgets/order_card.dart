@@ -1,3 +1,4 @@
+import 'package:easy_laba/helpers/capitalize_text.dart';
 import 'package:flutter/material.dart';
 
 import 'package:easy_laba/features/orders/model/order_model.dart';
@@ -82,7 +83,7 @@ class OrderCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              order.customerName,
+                              order.customerName.toCapitalized(),
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: Color(0xFF64748B),

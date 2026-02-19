@@ -1,4 +1,4 @@
-enum OrderStatus { pending, ongoing, readyForPickUp, pickedUp }
+enum OrderStatus { all, pending, ongoing, readyForPickUp, pickedUp }
 
 enum PaymentStatus { paid, unpaid }
 
@@ -27,6 +27,8 @@ String getOrderStatusRevered(OrderStatus status) {
       return 'Ready for Pickup';
     case OrderStatus.pickedUp:
       return 'Picked up';
+    case OrderStatus.all:
+      return 'All';
   }
 }
 

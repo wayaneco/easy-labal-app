@@ -15,21 +15,55 @@ Color _getStatusColor(OrderStatus status) {
       return const Color(0xFFF8DB38);
     case OrderStatus.pickedUp:
       return const Color(0xFF10B981);
+    case OrderStatus.all:
+      return Colors.transparent;
+  }
+}
+
+Color _getPaymentStatusColor(PaymentStatus status) {
+  switch (status) {
+    case PaymentStatus.paid:
+      return const Color(0xFF10B981);
+    case PaymentStatus.unpaid:
+      return const Color(0xFFF59E0B);
   }
 }
 
 class OrderDetail extends StatelessWidget {
   final OrderModel order;
 
-  OrderDetail({required this.order});
+  const OrderDetail({super.key, required this.order});
 
-  Color _getPaymentStatusColor(PaymentStatus status) {
-    switch (status) {
-      case PaymentStatus.paid:
-        return const Color(0xFF10B981);
-      case PaymentStatus.unpaid:
-        return const Color(0xFFF59E0B);
-    }
+  Future<void> _updatePaymentStatusDialog(BuildContext context) async {
+    final PaymentStatus? result = await showAdaptiveDialog(
+      context: context,
+      builder: (BuildContext dContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadiusGeometry.circular(5),
+          ),
+          child: Column(
+            mainAxisSize: .min,
+            children: [
+              ListTile(
+                onTap: () {
+                  Navigator.pop(dContext, PaymentStatus.paid);
+                },
+                title: Text('Paid'),
+                leading: Radio(
+                  value: PaymentStatus.paid,
+                  onChanged: (newValue) {
+                    Navigator.pop(dContext, PaymentStatus.paid);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    print(result);
   }
 
   @override
@@ -186,47 +220,7 @@ class OrderDetail extends StatelessWidget {
                               hoverColor: Colors.transparent,
                               onTap: order.payment_status == PaymentStatus.paid
                                   ? null
-                                  : () async {
-                                      final PaymentStatus?
-                                      result = await showAdaptiveDialog(
-                                        context: context,
-                                        builder: (context) {
-                                          return Dialog(
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadiusGeometry.circular(
-                                                    5,
-                                                  ),
-                                            ),
-                                            child: Column(
-                                              mainAxisSize: .min,
-                                              children: [
-                                                ListTile(
-                                                  onTap: () {
-                                                    Navigator.pop(
-                                                      context,
-                                                      'Paid',
-                                                    );
-                                                  },
-                                                  title: Text('Paid'),
-                                                  leading: Radio(
-                                                    value: 'Paid',
-                                                    onChanged: (newValue) {
-                                                      Navigator.pop(
-                                                        context,
-                                                        PaymentStatus.paid,
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      );
-
-                                      print(result);
-                                    },
+                                  : () => _updatePaymentStatusDialog(context),
                               child: Container(
                                 padding: EdgeInsets.all(
                                   10,

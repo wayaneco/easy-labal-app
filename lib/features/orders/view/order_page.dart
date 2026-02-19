@@ -30,6 +30,8 @@ Color _getStatusColor(OrderStatus status) {
       return const Color(0xFFF8DB38);
     case OrderStatus.pickedUp:
       return const Color(0xFF10B981);
+    case OrderStatus.all:
+      return Colors.transparent;
   }
 }
 
@@ -61,6 +63,8 @@ class _OrderScreenState extends State<OrderScreen> {
         return 'Completed';
       case OrderStatus.readyForPickUp:
         return 'Ready For Pickup';
+      case OrderStatus.all:
+        return '';
     }
   }
 
@@ -74,6 +78,8 @@ class _OrderScreenState extends State<OrderScreen> {
         return Icons.check_circle;
       case OrderStatus.readyForPickUp:
         return Icons.done_all;
+      case OrderStatus.all:
+        return Icons.done;
     }
   }
 
@@ -92,11 +98,13 @@ class _OrderScreenState extends State<OrderScreen> {
       builder: (_) => OrderStatusFilter(selectedStatus: _selectedStatusFilter),
     );
 
-    setState(() {
-      _selectedStatusFilter = result;
-    });
+    if (result != null) {
+      setState(() {
+        _selectedStatusFilter = result == OrderStatus.all ? null : result;
+      });
 
-    fetchOrders();
+      fetchOrders();
+    }
   }
 
   void _showNewOrder() {

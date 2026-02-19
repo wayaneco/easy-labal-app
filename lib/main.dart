@@ -1,5 +1,8 @@
 import 'package:easy_laba/core/auth_date.dart';
+import 'package:easy_laba/core/supabase.dart';
+import 'package:easy_laba/features/services/service/service_service.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:easy_laba/screens/login.dart';
@@ -14,7 +17,22 @@ Future<void> main() async {
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnenF1c3Zib3F0bXd1dHJ4YnZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0ODQyODQsImV4cCI6MjA3NTA2MDI4NH0.lmq4kVUOvuu3mvL3lReqKRAJ1IHHdkveloVOeLOCwSQ",
   );
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider<SupabaseClient>(create: (_) => Supabase.instance.client),
+        Provider<SupabaseService>(
+          create: (context) => SupabaseService(context.read<SupabaseClient>()),
+        ),
+        ChangeNotifierProvider<ServiceService>(
+          lazy: false,
+          create: (context) =>
+              ServiceService(context.read<SupabaseClient>())..getServices(),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
