@@ -1,5 +1,6 @@
 import 'package:easy_laba/core/auth_date.dart';
 import 'package:easy_laba/core/supabase.dart';
+import 'package:easy_laba/features/customers/service/customer_service.dart';
 import 'package:easy_laba/features/services/service/service_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -27,7 +28,14 @@ Future<void> main() async {
         ChangeNotifierProvider<ServiceService>(
           lazy: false,
           create: (context) =>
-              ServiceService(context.read<SupabaseClient>())..getServices(),
+              ServiceService(context.read<SupabaseService>().client)
+                ..getServices(),
+        ),
+        ChangeNotifierProvider<CustomerService>(
+          lazy: false,
+          create: (context) =>
+              CustomerService(context.read<SupabaseService>().client)
+                ..getCustomers(),
         ),
       ],
       child: const MyApp(),

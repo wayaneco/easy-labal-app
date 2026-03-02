@@ -203,9 +203,7 @@ class _OrderScreenState extends State<OrderScreen> {
                     },
                   ),
                   onRefresh: () async {
-                    setState(() {
-                      orders = OrderService().fetchOrders();
-                    });
+                    fetchOrders();
                   },
                 );
               },

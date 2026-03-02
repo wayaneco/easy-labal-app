@@ -25,8 +25,6 @@ class ServiceService extends ChangeNotifier {
       notifyListeners();
     } catch (error) {
       print("Supabase error: $error");
-
-      services = [];
     }
   }
 }
