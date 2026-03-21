@@ -55,4 +55,8 @@ class OrderService {
       );
     } catch (err) {}
   }
+
+  Future<void> addNewOrder() async {
+    try {} catch (error) {}
+  }
 }

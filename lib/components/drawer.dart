@@ -1,4 +1,8 @@
+import 'package:easy_laba/core/supabase.dart';
+import 'package:easy_laba/features/user/provider/user_provider.dart';
+import 'package:easy_laba/utils/shared_preferences.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../constants/drawer_items.dart';
 
@@ -46,41 +50,53 @@ Widget _buildDrawerItem({
   bool isSelected = false,
   required String path,
 }) {
-  return Container(
-    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-    decoration: BoxDecoration(
-      color: isSelected ? const Color(0xFF3B82F6) : Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: ListTile(
-      leading: Icon(
-        icon,
-        color: isSelected ? Colors.white : Colors.white70,
-        size: 22,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isSelected ? Colors.white : Colors.white70,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+  return Builder(
+    builder: (context) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF3B82F6) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
         ),
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      onTap: () {
-        print(path);
-      },
-    ),
+        child: ListTile(
+          leading: Icon(
+            icon,
+            color: isSelected ? Colors.white : Colors.white70,
+            size: 22,
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.white70,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          onTap: () {
+            if (path.isNotEmpty) {
+              Navigator.of(context).pushNamed(path);
+            }
+          },
+        ),
+      );
+    },
   );
 }
 
-Widget _buildDrawerFooter() {
+Widget _buildDrawerFooter(BuildContext context) {
   return Container(
     padding: const EdgeInsets.all(16),
     child: ListTile(
       leading: const Icon(Icons.logout, color: Colors.white70, size: 22),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       title: const Text('Logout', style: TextStyle(color: Colors.white70)),
-      onTap: () {},
+      onTap: () {
+        context.read<UserProvider>().reset();
+        context.read<SupabaseService>().client.auth.signOut();
+        Navigator.pushReplacementNamed(context, '/login');
+      },
     ),
   );
 }
@@ -88,7 +104,6 @@ Widget _buildDrawerFooter() {
 class CustomDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Drawer(
       backgroundColor: const Color(0xFF0F172A),
       child: SafeArea(
@@ -99,15 +114,19 @@ class CustomDrawer extends StatelessWidget {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: drawerItems.map((item) {
+                  final isSelected =
+                      ModalRoute.of(context)?.settings.name == item.path;
+
                   return _buildDrawerItem(
                     icon: item.icon,
                     title: item.title,
                     path: item.path,
+                    isSelected: isSelected,
                   );
                 }).toList(),
               ),
             ),
-            _buildDrawerFooter(),
+            _buildDrawerFooter(context),
           ],
         ),
       ),

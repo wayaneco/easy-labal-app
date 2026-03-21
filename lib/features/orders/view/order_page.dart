@@ -1,4 +1,5 @@
 import 'package:easy_laba/utils/date_formater.dart';
+import 'package:easy_laba/utils/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -13,13 +14,6 @@ import 'package:easy_laba/features/orders/view/widgets/order_card.dart';
 import '../service/order_service.dart';
 import '../model/order_model.dart';
 
-class OrderScreen extends StatefulWidget {
-  const OrderScreen({super.key});
-
-  @override
-  State<OrderScreen> createState() => _OrderScreenState();
-}
-
 Color _getStatusColor(OrderStatus status) {
   switch (status) {
     case OrderStatus.pending:
@@ -33,6 +27,13 @@ Color _getStatusColor(OrderStatus status) {
     case OrderStatus.all:
       return Colors.transparent;
   }
+}
+
+class OrderScreen extends StatefulWidget {
+  const OrderScreen({super.key});
+
+  @override
+  State<OrderScreen> createState() => _OrderScreenState();
 }
 
 class _OrderScreenState extends State<OrderScreen> {
@@ -147,6 +148,28 @@ class _OrderScreenState extends State<OrderScreen> {
     super.initState();
 
     orders = OrderService().fetchOrders(date: dateRangeFilter);
+
+    // checkStaffShiftId();
+  }
+
+  Future<void> checkStaffShiftId() async {
+    final staffShiftId = await StorageService.getString('staff_shift_id');
+
+    if (staffShiftId == null) {
+      showAdaptiveDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+          child: Container(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [Text('Staff Shifts')],
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   @override

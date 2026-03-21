@@ -7,14 +7,11 @@ class CustomerService extends ChangeNotifier {
 
   CustomerService(this.client);
 
-  List<CustomerModel> customers = [];
-
-  Future<void> getCustomers() async {
+  Future<List<CustomerModel>> getCustomers() async {
     try {
       final result = await client.from('view_customers').select();
 
-      print('======================== $result');
-      customers = result
+      return result
           .map(
             (Map<String, dynamic> json) => CustomerModel(
               id: json['customer_id'],
@@ -28,10 +25,8 @@ class CustomerService extends ChangeNotifier {
             ),
           )
           .toList();
-
-      notifyListeners();
     } catch (error) {
-      print('Error fetching customers: $error');
+      return [];
     }
   }
 }

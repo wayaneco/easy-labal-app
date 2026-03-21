@@ -1,7 +1,11 @@
-import 'package:easy_laba/core/auth_date.dart';
+import 'package:easy_laba/core/auth_gate.dart';
 import 'package:easy_laba/core/supabase.dart';
+import 'package:easy_laba/features/customers/model/customer_model.dart';
+import 'package:easy_laba/features/customers/provider/customer_provider.dart';
 import 'package:easy_laba/features/customers/service/customer_service.dart';
+import 'package:easy_laba/features/customers/view/customer_page.dart';
 import 'package:easy_laba/features/services/service/service_service.dart';
+import 'package:easy_laba/features/user/provider/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -34,8 +38,17 @@ Future<void> main() async {
         ChangeNotifierProvider<CustomerService>(
           lazy: false,
           create: (context) =>
-              CustomerService(context.read<SupabaseService>().client)
-                ..getCustomers(),
+              CustomerService(context.read<SupabaseService>().client),
+        ),
+        ChangeNotifierProvider<CustomerProvider>(
+          create: (context) =>
+              CustomerProvider(context.read<CustomerService>())
+                ..fetchCustomers(),
+        ),
+        ChangeNotifierProvider<UserProvider>(
+          lazy: false,
+          create: (context) =>
+              UserProvider(context.read<SupabaseService>().client),
         ),
       ],
       child: const MyApp(),
@@ -54,7 +67,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       routes: {
         '/login': (BuildContext context) => LoginScreen(),
-        '/order': (BuildContext context) => OrderScreen(),
+        '/orders': (BuildContext context) => OrderScreen(),
+        '/customers': (BuildContext context) => CustomerScreen(),
       },
     );
   }

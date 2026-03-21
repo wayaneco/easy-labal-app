@@ -1,4 +1,5 @@
 import 'package:easy_laba/features/customers/model/customer_model.dart';
+import 'package:easy_laba/features/customers/provider/customer_provider.dart';
 import 'package:easy_laba/features/customers/service/customer_service.dart';
 import 'package:easy_laba/features/services/service/service_service.dart';
 import 'package:easy_laba/helpers/capitalize_text.dart';
@@ -45,7 +46,7 @@ class _NewOrderSheetState extends State<NewOrderSheet>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    List<CustomerModel> customers = context.watch<CustomerService>().customers;
+    List<CustomerModel> customers = context.watch<CustomerProvider>().customers;
 
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -516,7 +517,7 @@ Widget _buildCustomerItem(
             CircleAvatar(
               backgroundColor: const Color(0xFF3B82F6).withOpacity(0.1),
               child: Text(
-                name.substring(0, 1),
+                name.substring(0, 1).toCapitalized(),
                 style: const TextStyle(
                   color: Color(0xFF3B82F6),
                   fontWeight: FontWeight.bold,
@@ -529,7 +530,7 @@ Widget _buildCustomerItem(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
+                    name.toCapitalized(),
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
